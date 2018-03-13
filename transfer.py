@@ -100,30 +100,30 @@ def get_case_objs(formatted):
     ac_objs = [obj for obj in ac_objs if 'jira' not in obj]
     return ac_objs
     
-    def convert_create_ret_to_html(obj, create_ret):
+def convert_create_ret_to_html(obj, create_ret):
     """
     pass the create result as parameter, this method will parse it and 
     return the HTML formate content. case title from obj, case id from create result.
     e.g. give a result: 
-    {'additionalInfo': {'external_id': '123475190',
-    'has_duplicate': False,
-    'id': '1857707',
-    'msg': 'ok',
-    'new_name': '',
-    'status_ok': 1,
-    'tcversion_id': '1857708',
-    'version_number': 1},
-    'id': '1857707',
-    'message': 'Success!',
-    'operation': 'createTestCase',
-    'status': True}
+    {"additionalInfo": {"external_id": "123475190",
+    "has_duplicate": False,
+    "id": "1857707",
+    "msg": "ok",
+    "new_name": "",
+    "status_ok": 1,
+    "tcversion_id": "1857708",
+    "version_number": 1},
+    "id": "1857707",
+    "message": "Success!",
+    "operation": "createTestCase",
+    "status": True}
       
     obj:
-    {'given': 'as prov admin',
-    'importance': 'low',
-    'then': 'multiple standard elements been updated, no user info elements updated',
-    'title': 'tttt01',
-    'when': 'i update multiple standard elements'}
+    {"given": "as prov admin",
+    "importance": "low",
+    "then": "multiple standard elements been updated, no user info elements updated",
+    "title": "tttt01",
+    "when": "i update multiple standard elements"}
       
     return: 
     <tr>
@@ -132,7 +132,18 @@ def get_case_objs(formatted):
        <td></td>
     </tr>
     """
-        pass
+    title_column = obj.get("title")
+    id_column = "PLT#-" + create_ret.get("additionalInfo").get("external_id")
+    
+    # create XML tree and return XML tostring as result
+    tr_node = ET.Element('tr')
+    td1_node = ET.SubElement(tr_node, 'td')
+    td1_node.text = title_column
+    td2_node = ET.SubElement(tr_node, 'td')
+    td2_node.text = id_column
+    td3_node = ET.SubElement(tr_node, 'td')
+    td3_node.text = ' '
+    return ET.tostring(tr_node, encoding='unicode')
     
 # suite: 1856183, project: 5182, author: jzheng
 def create_testlink_cases(ac_objs, suite_id, project_id, author):
