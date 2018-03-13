@@ -24,6 +24,20 @@ class TestCase(unittest.TestCase):
         ret = transfer.convert_create_ret_to_html(json.loads(objstr), json.loads(retstr))
         self.assertEqual(ret, expectedstr)
         
+    def test_generate_ret_table(self):
+        expected_header = ['AC Title', 'Testlink Id', 'Comment']
+        ret = transfer.generate_ret_table()
+        self.assertEqual(ret.tag, 'table')
+        self.assertEqual(ret.get('id'), 'ret_info')
+
+        # assert table header
+        headers = []
+        for sub in ret.iter('th'):
+            headers.append(sub.text)
+
+        self.assertEqual(len(headers), 3)
+        for sub in expected_header:
+            self.assertTrue(sub in headers)
 
 if __name__ == '__main__':
     unittest.main()

@@ -145,6 +145,23 @@ def convert_create_ret_to_html(obj, create_ret):
     td3_node.text = ' '
     return ET.tostring(tr_node, encoding='unicode')
     
+def generate_ret_table():
+    """
+    return tbody HTML content
+    """
+    table_html = '''
+    <table id="ret_info">
+        <tbody>
+            <tr>
+                <th>AC Title</th>
+                <th>Testlink Id</th>
+                <th>Comment</th>
+            </tr>
+        </tbody>
+    </table>'''
+    return ET.fromstring(table_html)
+    
+    
 # suite: 1856183, project: 5182, author: jzheng
 def create_testlink_cases(ac_objs, suite_id, project_id, author):
     # define the fields we need when create test case
