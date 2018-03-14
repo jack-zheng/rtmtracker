@@ -145,7 +145,7 @@ def convert_create_ret_to_html(obj, create_ret):
     td3_node.text = ' '
     return ET.tostring(tr_node, encoding='unicode')
     
-def generate_ret_table():
+def generate_rtm_table():
     """
     return tbody HTML content
     """
@@ -161,6 +161,18 @@ def generate_ret_table():
     </table>'''
     return ET.fromstring(table_html)
     
+
+def append_row_data(table, rows):
+    """
+    @param: table, XML's elementtree obj
+    @param: row: XML obj convert from Testlink result
+    this method will append converted row data to table 
+    """
+    tbody = table.getchildren()[0]
+    for row in rows:
+        tbody.append(row)
+        
+    return table
     
 # suite: 1856183, project: 5182, author: jzheng
 def create_testlink_cases(ac_objs, suite_id, project_id, author):
