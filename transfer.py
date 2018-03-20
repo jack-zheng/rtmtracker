@@ -55,28 +55,36 @@ def format_body(body):
         fixed = fixed.replace(key, '')
     return fixed
 
+def update_rtm_to_comfluence_page(original_content, append_content):
+    """
+    @params01: original confluence content
+    @params02: table content need to be append
+    """
+    processed_content = ""
     
-def get_case_objs(formatted):
-    '''
-    parse the formatted body and get the attribute we need when create test case
-    return: insert result of each case, format as:
-        [{'additionalInfo': {'external_id': '123475190',
-       'has_duplicate': False,
-       'id': '1857707',
-       'msg': 'ok',
-       'new_name': '',
-       'status_ok': 1,
-       'tcversion_id': '1857708',
-       'version_number': 1},
-      'id': '1857707',
-      'message': 'Success!',
-      'operation': 'createTestCase',
-      'status': True}, ...]
-    '''
+    if '<table>' in original_content:
+        processed_content = re.sub(r'<table>.*<\/table>', append_content, original_content)
+    else:
+        processed_content = original_content + append_content
+    return processed_content
+    
+def get_story_ac_at_collection(formatted):
+    """
+    return passed story, ac, at objects for later testing
+    sample return:
+    {
+        "story":{as:xx, i want:xx, then:xx, jira:xx},
+        "ac":[{given:xx, when:xx, then:xx, acid:xx}, ac02...],
+        "at":[{title:xx, importance:xx, acid:xx}, at02...]
+    }
+    """
     _target_fields = ['title:', 'given:', 'when:', 'then:', 'importance:', 'jira:', 'as:', 'i want to:']
     
-    root = ET.fromstring(formatted)
+    story_obj = {}
     ac_objs = []
+    at_objs = []
+    
+    root = ET.fromstring(formatted)
     for node in root.iter('plain-text-body'):
         ac_str = ET.tostring(node, encoding='unicode').lower()
         # filter multiple space and <tag>
@@ -85,6 +93,12 @@ def get_case_objs(formatted):
         
         line_list = ac_str.split('\n')
         parsed_list = list(filter(None, list(map(str.strip, line_list))))
+        
+        # if contains key word 'jira' - loop 1 else loop 2
+        if 'jira:' in parsed_list:
+            parse_story(parsed_list)
+        else:
+            parse_ac_at(parsed_list)
 
         ac_obj = {}
         for sub in _target_fields:
@@ -99,6 +113,18 @@ def get_case_objs(formatted):
     # remove story obj
     ac_objs = [obj for obj in ac_objs if 'jira' not in obj]
     return ac_objs
+
+def parse_story(str_list):
+    """
+    process passed string, return story dict
+    """
+    pass
+
+def parse_ac_at(str_list):
+    """
+    process passed string, return ac, at list
+    """
+    pass
     
 def convert_create_ret_to_html(obj, create_ret):
     """
@@ -184,7 +210,7 @@ def create_testlink_cases(ac_objs, suite_id, project_id, author):
     for ac in ac_objs:
         case_title = ac.get(_case_fields[0])
         cast_importance = get_importance_level(ac.get(_case_fields[1]))
-        case_steps = construct_ac(ac)
+        case_steps = construct_steps()
         result_ret = tlc.createTestCase(case_title, suite_id, project_id, author,\
                        "this case is created by python auto script",steps=case_steps,\
                        preconditions='put some pre-conditions here', importance=cast_importance, executiontype=2)
@@ -202,7 +228,7 @@ def get_importance_level(importance_level):
     return case_importance if case_importance else 2
 
 
-def construct_ac(ac_obj):
+def construct_steps():
     """
     steps sample:
         [{'step_number' : 1, 'actions' : "action A" , 
@@ -216,18 +242,24 @@ def construct_ac(ac_obj):
     _step_attribute = ['step_number', 'actions', 'expected_results', 'execution_type']
     step_list = []
     one_step = {}
-    step_actions = "<p>" + _steps[0] + ":\n</p><p style='text-indent: 30px'>    " + ac_obj.get(_steps[0]) + "\n</p>"\
+    # step_actions = "";
+    # one_step[_step_attribute[0]] = 1
+    # one_step[_step_attribute[1]] = step_actions
+    # one_step[_step_attribute[2]] = ''
+    # one_step[_step_attribute[3]] = 2
+    # print('one_step: %s' % one_step)
+    # step_list.append(one_step)
+    return step_list
+    
+def construct_summary(ac_obj):
+    """
+    return summary, content is formated ac expression
+    """
+    _steps = ['given', 'when', 'then']
+    content = "<p>" + _steps[0] + ":\n</p><p style='text-indent: 30px'>    " + ac_obj.get(_steps[0]) + "\n</p>"\
                   +"<p>" + _steps[1] + ":\n</p><p style='text-indent: 30px'>    " + ac_obj.get(_steps[1]) + "\n</p>"\
                   +"<p>" + _steps[2] + ":\n</p><p style='text-indent: 30px'>    " + ac_obj.get(_steps[2]) + "\n</p>"
-    # print('step_actions: %s\n' % step_actions)
-    one_step[_step_attribute[0]] = 1
-    one_step[_step_attribute[1]] = step_actions
-    one_step[_step_attribute[2]] = ''
-    one_step[_step_attribute[3]] = 2
-    # print('one_step: %s' % one_step)
-    step_list.append(one_step)
-    return step_list
-            
+    return content
  
 def _init_testlink_client():
     key='c49d32b58989096d42282fd137ab58bc'

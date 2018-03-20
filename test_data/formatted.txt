@@ -1,0 +1,42 @@
+<root><h3>Story:</h3><structured-macro name="code" schema-version="1" macro-id="d8253733-ecc9-4235-a711-916139a899a4"><parameter name="language">java</parameter><plain-text-body><![CDATA[Jira: PLT-68861 
+As:
+	story as
+I want to:
+	story i want
+Then:
+	story then]]></plain-text-body></structured-macro><h3><br />Acceptance Criteria:</h3><structured-macro name="code" schema-version="1" macro-id="168a448c-095a-4e43-8dd1-92261d06feb4"><parameter name="language">text</parameter><parameter name="title">AC-AT of PLT-68861</parameter><plain-text-body><![CDATA[acceptance criteria:
+GIVEN:
+	ac01 given
+THEN: 
+	ac01 then
+WHEN:
+	ac01 when
+
+
+
+acceptance test:
+title: 
+	at title 01
+importance:
+    High
+
+
+title: 
+	at title 02
+
+]]></plain-text-body></structured-macro><structured-macro name="code" schema-version="1" macro-id="a597489d-6cce-4adf-8f64-b39e13011a0c"><parameter name="language">text</parameter><parameter name="title">AC-AT of PLT-68861</parameter><plain-text-body><![CDATA[acceptance criteria:
+GIVEN:
+	ac02 given 
+THEN: 
+	ac02 then
+WHEN:
+	ac02 when
+
+
+acceptance test:
+title: 
+	at title 03
+importance:
+    High
+
+]]></plain-text-body></structured-macro></root>
