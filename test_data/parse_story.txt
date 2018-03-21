@@ -1,0 +1,8 @@
+jira:
+plt-68861
+as:
+story as
+i want to:
+story i want
+then:
+story then

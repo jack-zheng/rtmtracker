@@ -1,0 +1,14 @@
+acceptance criteria:
+given:
+ac01 given
+when:
+ac01 when
+then:
+ac01 then
+acceptance test:
+title:
+at title 01
+importance:
+high
+title:
+at title 02

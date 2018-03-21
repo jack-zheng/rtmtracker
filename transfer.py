@@ -78,7 +78,6 @@ def get_story_ac_at_collection(formatted):
         "at":[{title:xx, importance:xx, acid:xx}, at02...]
     }
     """
-    _target_fields = ['title:', 'given:', 'when:', 'then:', 'importance:', 'jira:', 'as:', 'i want to:']
     
     story_obj = {}
     ac_objs = []
@@ -94,37 +93,57 @@ def get_story_ac_at_collection(formatted):
         line_list = ac_str.split('\n')
         parsed_list = list(filter(None, list(map(str.strip, line_list))))
         
+        
         # if contains key word 'jira' - loop 1 else loop 2
         if 'jira:' in parsed_list:
             parse_story(parsed_list)
         else:
-            parse_ac_at(parsed_list)
-
-        ac_obj = {}
-        for sub in _target_fields:
-            if sub in parsed_list:
-                    value = parsed_list[parsed_list.index(sub) + 1]
-                    ac_obj[sub.replace(':', '')] = value
+            parse_ac_at(parsed_list, len(ac_objs))
             
-        ac_objs.append(ac_obj)
-        
-    # remove empty ac_obj
-    ac_objs = [obj for obj in ac_objs if obj]
-    # remove story obj
-    ac_objs = [obj for obj in ac_objs if 'jira' not in obj]
-    return ac_objs
+    return {"story": story_obj, "ac": ac_objs, "at": at_objs}
 
 def parse_story(str_list):
     """
     process passed string, return story dict
     """
-    pass
+    _target_fields = ['then:', 'jira:', 'as:', 'i want to:']
 
-def parse_ac_at(str_list):
+    story = {}
+    for sub in _target_fields:
+        value = str_list[str_list.index(sub) + 1]
+        story[sub.replace(':', '')] = value
+    return story
+    
+def parse_ac(str_list, acid):
+    _target_fields = ['given:', 'when:', 'then:']
+
+    ac = {"acid": acid}
+    for sub in _target_fields:
+        value = str_list[str_list.index(sub) + 1]
+        ac[sub.replace(':', '')] = value
+    return ac
+
+    
+def parse_at(str_list, index):
     """
     process passed string, return ac, at list
     """
-    pass
+    _target_fields = ['title:', 'importance:']
+    ats = []
+    print("list: %s"  % str_list)
+    # get all 'title:' index
+    indexs = [i for i, value in enumerate(str_list, 0) if value == _target_fields[0]]
+    print("indexs: %s"  % indexs)
+    for sub in indexs:
+        posi = indexs.index(sub)
+        #if len(indexs) != posi
+        print("at: %s" % str_list[sub:(indexs.index(posi+1))])
+        #else:
+            #print("at else: %s" % indexs[indexs[posi:]])
+    for sub in _target_fields:
+        value = str_list[str_list.index(sub) + 1]
+        story[sub.replace(':', '')] = value
+    return story
     
 def convert_create_ret_to_html(obj, create_ret):
     """

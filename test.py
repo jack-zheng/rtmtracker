@@ -113,6 +113,46 @@ class TestCase(unittest.TestCase):
             
         for sub in expected_at:
             self.assertTrue(sub in ret.get('at'))
+            
+    def test_parse_story(self):
+        """
+        parse prepared file as formatted string input
+        return story
+        """
+        with open('./test_data/parse_story.txt', 'r') as file:
+            lines = file.readlines()
+        # remove '\n' for each line
+        lines = list(map(lambda x: x.strip(), lines))
+        ret = transfer.parse_story(lines)
+        self.assertEqual(ret.get('jira'), 'plt-68861')
+        self.assertEqual(ret.get('as'), 'story as')
+        self.assertEqual(ret.get('i want to'), 'story i want')
+        self.assertEqual(ret.get('then'), 'story then')
+    
+    def test_parse_ac(self):
+        with open('./test_data/parse_ac_at.txt', 'r') as file:
+            lines = file.readlines()
+        # remove '\n' for each line
+        lines = list(map(lambda x: x.strip(), lines))
+        ret = transfer.parse_ac(lines, 0)
+        self.assertEqual(ret.get('given'), 'ac01 given')
+        self.assertEqual(ret.get('when'), 'ac01 when')
+        self.assertEqual(ret.get('then'), 'ac01 then')
+        self.assertEqual(ret.get('acid'), 0)
+        
+    def test_parse_at(self):
+        with open('./test_data/parse_ac_at.txt', 'r') as file:
+            lines = file.readlines()
+        # remove '\n' for each line
+        lines = list(map(lambda x: x.strip(), lines))
+        ret = transfer.parse_at(lines, 0)
+        
+        self.assertEqual(ret[0].get('title'), 'at title 01')
+        self.assertEqual(ret[0].get('importance'), 'high')
+        self.assertEqual(ret[0].get('acid'), 0)
+        self.assertEqual(ret[1].get('title'), 'at title 01')
+        self.assertTrue(ret[1].get('importance') is None)
+        self.assertEqual(ret[1].get('acid'), 0)
         
 if __name__ == '__main__':
     unittest.main()
