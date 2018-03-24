@@ -145,6 +145,12 @@ def parse_at(str_list, index):
         story[sub.replace(':', '')] = value
     return story
     
+def get_pair(indexs):
+    """
+    input list and return in pair format
+    e.g. input: [1,2,3,4,5] return [(1,2), (2,3), (3,4), (4,5), (5)]
+    """
+    
 def convert_create_ret_to_html(obj, create_ret):
     """
     pass the create result as parameter, this method will parse it and 
