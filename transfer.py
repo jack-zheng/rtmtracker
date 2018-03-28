@@ -74,8 +74,8 @@ def get_story_ac_at_collection(formatted):
     sample return:
     {
         "story":{as:xx, i want:xx, then:xx, jira:xx},
-        "ac":[{given:xx, when:xx, then:xx, acid:xx}, ac02...],
-        "at":[{title:xx, importance:xx, acid:xx}, at02...]
+        "acs":[{given:xx, when:xx, then:xx, acid:xx}, ac02...],
+        "ats":[{title:xx, importance:xx, acid:xx}, at02...]
     }
     """
     
@@ -96,15 +96,17 @@ def get_story_ac_at_collection(formatted):
         
         # if contains key word 'jira' - loop 1 else loop 2
         if 'jira:' in parsed_list:
-            parse_story(parsed_list)
+            story_obj = parse_story(parsed_list)
         else:
-            parse_ac_at(parsed_list, len(ac_objs))
+            acid = len(ac_objs)
+            ac_objs.append(parse_ac(parsed_list, acid))
+            at_objs += (parse_at(parsed_list, acid))
             
-    return {"story": story_obj, "ac": ac_objs, "at": at_objs}
+    return {"story": story_obj, "acs": ac_objs, "ats": at_objs}
 
 def parse_story(str_list):
     """
-    process passed string, return story dict
+    process passed string, return story dictionary
     """
     _target_fields = ['then:', 'jira:', 'as:', 'i want to:']
 
@@ -115,6 +117,9 @@ def parse_story(str_list):
     return story
     
 def parse_ac(str_list, acid):
+    """
+    process string list passed in and return an ac obj
+    """
     _target_fields = ['given:', 'when:', 'then:']
 
     ac = {"acid": acid}
@@ -124,32 +129,62 @@ def parse_ac(str_list, acid):
     return ac
 
     
-def parse_at(str_list, index):
+def parse_at(str_list, acid):
     """
-    process passed string, return ac, at list
+    process passed string, return at list
     """
-    _target_fields = ['title:', 'importance:']
-    ats = []
-    print("list: %s"  % str_list)
-    # get all 'title:' index
-    indexs = [i for i, value in enumerate(str_list, 0) if value == _target_fields[0]]
-    print("indexs: %s"  % indexs)
-    for sub in indexs:
-        posi = indexs.index(sub)
-        #if len(indexs) != posi
-        print("at: %s" % str_list[sub:(indexs.index(posi+1))])
-        #else:
-            #print("at else: %s" % indexs[indexs[posi:]])
-    for sub in _target_fields:
-        value = str_list[str_list.index(sub) + 1]
-        story[sub.replace(':', '')] = value
-    return story
+    at_list = filter_at_collection(str_list)
+    for sub in at_list:
+        sub['acid'] = acid
+    return at_list
     
-def get_pair(indexs):
+def filter_at_collection(str_list):
     """
     input list and return in pair format
-    e.g. input: [1,2,3,4,5] return [(1,2), (2,3), (3,4), (4,5), (5)]
+    e.g. input: ['acceptance criteria:',
+                 'given:',
+                 'ac01 given',
+                 'when:',
+                 'ac01 when',
+                 'then:',
+                 'ac01 then',
+                 'acceptance test:',
+                 'title:',
+                 'at title 01',
+                 'importance:',
+                 'high',
+                 'title:',
+                 'at title 02']
+         return [
+                {'title':'at title 01',
+                'importance': 'high'},
+                {'title:': 'at title 02'}]
     """
+    _target_fields = ['title:', 'importance:']
+    sub = str_list[str_list.index(_target_fields[0]):]
+    inds = [i for i, x in enumerate(sub) if x == 'title:']
+    ac_list = []
+    for i in range(0, len(inds)):
+        if i == (len(inds) - 1):
+            ac_obj = tuple_to_at_obj(tuple(sub[inds[i]:]))
+        else:
+            ac_obj = tuple_to_at_obj(tuple(sub[inds[i]:inds[i+1]]))
+        ac_list.append(ac_obj)
+        
+    return ac_list
+        
+def tuple_to_at_obj(ac_tuple):
+    """
+    input: ('title:', 'at title 01', 'importance:', 'high')
+    return {'title': 'at title 01', 'importance': 'high'}
+    """
+    _target_fields = ['title:', 'importance:']
+    at_obj = {}
+    at_obj['title'] = ac_tuple[ac_tuple.index(_target_fields[0]) + 1]
+    if _target_fields[1] in ac_tuple:
+        at_obj['importance'] = ac_tuple[ac_tuple.index(_target_fields[1]) + 1]
+    return at_obj
+    
     
 def convert_create_ret_to_html(obj, create_ret):
     """

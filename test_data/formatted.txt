@@ -1,4 +1,5 @@
-<root><h3>Story:</h3><structured-macro name="code" schema-version="1" macro-id="d8253733-ecc9-4235-a711-916139a899a4"><parameter name="language">java</parameter><plain-text-body><![CDATA[Jira: PLT-68861 
+<root><h3>Story:</h3><structured-macro name="code" schema-version="1" macro-id="d8253733-ecc9-4235-a711-916139a899a4"><parameter name="language">java</parameter><plain-text-body><![CDATA[Jira: 
+PLT-68861 
 As:
 	story as
 I want to:
