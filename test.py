@@ -102,7 +102,7 @@ class TestCase(unittest.TestCase):
         
         expected_acs = [{"given": "ac01 given", "when": "ac01 when", "then": "ac01 then", "acid": 0}, {"given": "ac02 given", "when": "ac02 when", "then": "ac02 then", "acid": 1}]
         
-        expected_ats = [{"title": "at title 01", "importance": "high", "acid": 0}, {"title": "at title 02", "acid": 0}, {"title": "at title 03", "importance": "high", "acid": 1}]
+        expected_ats = [{"title": "at title 01", "importance": "high", "acid": 0}, {"title": "at title 02", "importance": "low", "acid": 0}, {"title": "at title 03", "importance": "high", "acid": 1}]
         
         with open('./test_data/formatted.txt') as file:
             formatted = file.read()
@@ -113,7 +113,7 @@ class TestCase(unittest.TestCase):
             self.assertTrue(sub in ret.get('acs'))
             
         for sub in expected_ats:
-            self.assertTrue(sub in ret.get('ats'))
+            self.assertTrue(sub in ret.get('ats'), 'sub: %s not in ats: %s' %(sub, ret.get('ats')))
             
     def test_parse_story(self):
         """
@@ -152,7 +152,7 @@ class TestCase(unittest.TestCase):
         self.assertEqual(ret[0].get('importance'), 'high')
         self.assertEqual(ret[0].get('acid'), 0)
         self.assertEqual(ret[1].get('title'), 'at title 02')
-        self.assertTrue(ret[1].get('importance') is None)
+        self.assertTrue(ret[1].get('importance'), 'medium')
         self.assertEqual(ret[1].get('acid'), 0)
     
     def test_filter_at_collection(self):
@@ -174,7 +174,7 @@ class TestCase(unittest.TestCase):
         self.assertEqual(ret[0].get('title'), 'at title 01')
         self.assertEqual(ret[0].get('importance'), 'high')
         self.assertEqual(ret[1].get('title'), 'at title 02')
-        self.assertTrue(ret[1].get('importance') is None)
+        self.assertTrue(ret[1].get('importance'), 'low')
        
     def test_tuple_to_at_obj(self):
         fields = ['title', 'importance']
@@ -186,7 +186,7 @@ class TestCase(unittest.TestCase):
         input2 = ('title:', 'at title 01')
         ret = transfer.tuple_to_at_obj(input2)
         self.assertEqual(ret.get(fields[0]), input2[1])
-        self.assertTrue(ret.get(fields[1]) is None)
+        self.assertTrue(ret.get(fields[1]), 'low')
         
 if __name__ == '__main__':
     unittest.main()

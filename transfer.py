@@ -7,30 +7,19 @@ import re
 import testlink
 
 def main():
-    # test id is: 233718819
-    body = get_page_body(sys.argv[1])
-    # print("---> %s \n" %body)
-    formatted = format_body(body)
-    # print("formatted ---> %s \n" %formatted)
-    ac_objs = get_case_objs(formatted)
-    #create_testlink_cases(ac_objs)
+    pass
 
 def test():
-    body = get_page_body(233717240)
-    # print("---> %s \n" %body)
+    # v2 test confluence page id: 235217044
+    body = get_page_body(235217044)
     formatted = format_body(body)
     # print("formatted ---> %s \n" %formatted)
-    ac_objs = get_case_objs(formatted)
-    print("processed case count: %s" % len(ac_objs))
+    return get_story_ac_at_collection(formatted)
+    # print("processed case count: %s" % len(ac_objs))
     # suite: 1856183, project: 5182, author: jzheng
-    create_testlink_cases(ac_objs, 1856183, 5182, 'jzheng')
-    print("process done !!")
+    # create_testlink_cases(ac_objs, 1856183, 5182, 'jzheng')
+    # print("process done !!")
     
-def get_formatted_html(page_id):
-    # test folder: 1857489, page: 233718819
-    body = get_page_body(page_id)
-    return format_body(body)
-
 
 def get_page_body(pageid):
     '''
@@ -40,6 +29,12 @@ def get_page_body(pageid):
     auth = HTTPBasicAuth('I306454', 'Lanmolei01241')
     querystring = {"expand": "body.storage"}
     resp = requests.get(url, auth=auth, params=querystring)
+    
+    # throw exception is request fail
+    if resp.status_code != 200:
+        mesg = "Send request fail, response show as: \n" + resp.text
+        raise RuntimeError(mesg)
+        
     return json.loads(resp.text).get('body').get('storage').get('value')
 
 def format_body(body):
@@ -78,7 +73,6 @@ def get_story_ac_at_collection(formatted):
         "ats":[{title:xx, importance:xx, acid:xx}, at02...]
     }
     """
-    
     story_obj = {}
     ac_objs = []
     at_objs = []
@@ -92,7 +86,6 @@ def get_story_ac_at_collection(formatted):
         
         line_list = ac_str.split('\n')
         parsed_list = list(filter(None, list(map(str.strip, line_list))))
-        
         
         # if contains key word 'jira' - loop 1 else loop 2
         if 'jira:' in parsed_list:
@@ -123,9 +116,13 @@ def parse_ac(str_list, acid):
     _target_fields = ['given:', 'when:', 'then:']
 
     ac = {"acid": acid}
-    for sub in _target_fields:
-        value = str_list[str_list.index(sub) + 1]
-        ac[sub.replace(':', '')] = value
+    try:
+        for sub in _target_fields:
+            value = str_list[str_list.index(sub) + 1]
+            ac[sub.replace(':', '')] = value
+    except Exception as e:
+        print(e)
+        raise RuntimeError('Parse ac failed, ac show as below:\n' + str(str_list))
     return ac
 
     
@@ -175,14 +172,20 @@ def filter_at_collection(str_list):
         
 def tuple_to_at_obj(ac_tuple):
     """
+    parse tuple to at object, if no importance is setting, set it as low as default
+    
     input: ('title:', 'at title 01', 'importance:', 'high')
     return {'title': 'at title 01', 'importance': 'high'}
+    
+    input: ('title:', 'at title 01')
+    return {'title': 'at title 01', 'importance': 'low'}
     """
     _target_fields = ['title:', 'importance:']
     at_obj = {}
     at_obj['title'] = ac_tuple[ac_tuple.index(_target_fields[0]) + 1]
     if _target_fields[1] in ac_tuple:
         at_obj['importance'] = ac_tuple[ac_tuple.index(_target_fields[1]) + 1]
+    else: at_obj['importance'] = 'low'
     return at_obj
     
     
