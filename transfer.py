@@ -16,8 +16,8 @@ def test():
     # print("formatted ---> %s \n" %formatted)
     return get_story_ac_at_collection(formatted)
     # print("processed case count: %s" % len(ac_objs))
-    # suite: 1856183, project: 5182, author: jzheng
-    # create_testlink_cases(ac_objs, 1856183, 5182, 'jzheng')
+    # suite: 1857489(confluence transfer), project: 5182(platform), author: jzheng
+    # create_testlink_cases(ac_objs, 1857489, 5182, 'jzheng')
     # print("process done !!")
     
 
@@ -263,23 +263,40 @@ def append_row_data(table, rows):
         
     return table
     
-# suite: 1856183, project: 5182, author: jzheng
-def create_testlink_cases(ac_objs, suite_id, project_id, author):
-    # define the fields we need when create test case
-    _case_fields = ['title', 'importance']
-    # loop ac objs to create test cases
+    
+def create_single_test_case(at, ac, suite_id, project_id, author):
+    """
+    @params01 at: which contains test case id and importance
+    @params02 ac: which contains test case summary
+    @params03 suite_id: locate of testlink folder
+    @params04 project_id: locate of testlink folder
+    @params05 author: the creator of test case
+    
+    return:
+    {'additionalInfo': {'external_id': '123475531',
+    'has_duplicate': False,
+    'id': '1868121',
+    'msg': 'ok',
+    'new_name': '',
+    'status_ok': 1,
+    'tcversion_id': '1868122',
+    'version_number': 1},
+    'id': '1868121',
+    'message': 'Success!',
+    'operation': 'createTestCase',
+    'status': True}
+    """
     tlc = _init_testlink_client()
-    create_ret = []
-    for ac in ac_objs:
-        case_title = ac.get(_case_fields[0])
-        cast_importance = get_importance_level(ac.get(_case_fields[1]))
-        case_steps = construct_steps()
-        result_ret = tlc.createTestCase(case_title, suite_id, project_id, author,\
-                       "this case is created by python auto script",steps=case_steps,\
-                       preconditions='put some pre-conditions here', importance=cast_importance, executiontype=2)
-        create_ret.append(result_ret[0])
-        
-    return create_ret
+    
+    case_title = at.get('title')
+    case_importance = ac.get('importance')
+    case_summary = construct_summary(ac)
+    result_ret = tlc.createTestCase(case_title, suite_id, project_id, author,\
+                       case_summary,steps=[], preconditions='has not comment any step', \
+                       importance=case_importance, executiontype=2)
+                       
+    # result_ret is a list contains 1 ret, we return the ret directly
+    return result_ret[0]
 
         
 def get_importance_level(importance_level):

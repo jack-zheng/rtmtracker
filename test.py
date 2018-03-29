@@ -188,5 +188,16 @@ class TestCase(unittest.TestCase):
         self.assertEqual(ret.get(fields[0]), input2[1])
         self.assertTrue(ret.get(fields[1]), 'low')
         
+    '''
+    def test_create_single_test_case_real(self):
+        """
+        this test should not be execute frequently, this will generate test data in testlink
+        """
+        ac = {'given': 'g01', 'then': 't01', 'when': 'when01'}
+        at = {'importance': 'low', 'title': 't01'}
+        ret = transfer.create_single_test_case(at, ac, 1857489, 5182, 'jzheng')
+        self.assertEqual(ret.get('message'), 'Success!')'''
+        
+        
 if __name__ == '__main__':
     unittest.main()
