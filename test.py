@@ -2,6 +2,7 @@ import unittest
 import transfer
 import json
 import xml.etree.ElementTree as ET
+from unittest import mock 
 
 class TestCase(unittest.TestCase):
 
@@ -188,6 +189,13 @@ class TestCase(unittest.TestCase):
         self.assertEqual(ret.get(fields[0]), input2[1])
         self.assertTrue(ret.get(fields[1]), 'low')
         
+    @mock.patch('testlink.testlinkapi.TestlinkAPIClient.createTestCase')
+    def test_create_single_test_case_mock(self, mock_create):
+        mock_create.return_value = [20]
+        ac = {'given': 'g01', 'then': 't01', 'when': 'when01'}
+        at = {'importance': 'low', 'title': 't01'}
+        ret = transfer.create_single_test_case(at, ac, 1857489, 5182, 'jzheng')
+        self.assertTrue(mock_create.called)
     '''
     def test_create_single_test_case_real(self):
         """
