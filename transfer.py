@@ -7,19 +7,18 @@ import re
 import testlink
 
 def main():
-    pass
-
-def test():
     # v2 test confluence page id: 235217044
     body = get_page_body(235217044)
     formatted = format_body(body)
     # print("formatted ---> %s \n" %formatted)
-    return get_story_ac_at_collection(formatted)
-    # print("processed case count: %s" % len(ac_objs))
+    ret = get_story_ac_at_collection(formatted)
+    ret = create_test_cases(ret.get('ats'), ret.get('acs'), ret.get('story'), 1857489, 5182, 'jzheng')
+    
+    print('cases create result: %s' % ret)
     # suite: 1857489(confluence transfer), project: 5182(platform), author: jzheng
     # create_testlink_cases(ac_objs, 1857489, 5182, 'jzheng')
     # print("process done !!")
-    
+
 
 def get_page_body(pageid):
     '''
@@ -264,7 +263,7 @@ def append_row_data(table, rows):
     return table
     
     
-def create_single_test_case(at, ac, suite_id, project_id, author):
+def create_single_test_case(at, ac, story, suite_id, project_id, author):
     """
     @params01 at: which contains test case id and importance
     @params02 ac: which contains test case summary
@@ -290,7 +289,7 @@ def create_single_test_case(at, ac, suite_id, project_id, author):
     
     case_title = at.get('title')
     case_importance = ac.get('importance')
-    case_summary = construct_summary(ac)
+    case_summary = construct_summary(ac, story)
     result_ret = tlc.createTestCase(case_title, suite_id, project_id, author,\
                        case_summary,steps=[], preconditions='has not comment any step', \
                        importance=case_importance, executiontype=2)
@@ -298,6 +297,29 @@ def create_single_test_case(at, ac, suite_id, project_id, author):
     # result_ret is a list contains 1 ret, we return the ret directly
     return result_ret[0]
 
+def create_test_cases(ats, acs, story, suite_id, project_id, author):
+    """
+    @params01: acceptance criteria collection
+    @params02: acceptance tests collection
+    we parse the input, find our the ac match with at, and parse ac, at to create_single_test_case method 
+    to create all test cases
+    """
+    test_case_info = []
+    for at in ats:
+        acid = at.get('acid')
+        if acid is None:
+            raise RuntimeError("acid should not be null, ats: " + str(ats))
+        mapped_ac = {}
+        for ac in acs:
+            if ac.get('acid') == acid:
+                mapped_ac = ac
+                break
+        if not mapped_ac:
+            raise RuntimeError("Can't find matched ac, acs: " + str(acs) + " ats: " + str(ats))
+        ret = create_single_test_case(at, ac, story, suite_id, project_id, author)
+        test_case_info.append(ret)
+    return test_case_info
+    
         
 def get_importance_level(importance_level):
     # define importance status dict
@@ -331,12 +353,13 @@ def construct_steps():
     # step_list.append(one_step)
     return step_list
     
-def construct_summary(ac_obj):
+def construct_summary(ac_obj, story):
     """
     return summary, content is formated ac expression
     """
     _steps = ['given', 'when', 'then']
-    content = "<p>" + _steps[0] + ":\n</p><p style='text-indent: 30px'>    " + ac_obj.get(_steps[0]) + "\n</p>"\
+    content = "<p> Jira Id: " + story.get('jira') + "\n</p>"\
+                  +"<p>" + _steps[0] + ":\n</p><p style='text-indent: 30px'>    " + ac_obj.get(_steps[0]) + "\n</p>"\
                   +"<p>" + _steps[1] + ":\n</p><p style='text-indent: 30px'>    " + ac_obj.get(_steps[1]) + "\n</p>"\
                   +"<p>" + _steps[2] + ":\n</p><p style='text-indent: 30px'>    " + ac_obj.get(_steps[2]) + "\n</p>"
     return content

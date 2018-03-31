@@ -80,11 +80,12 @@ class TestCase(unittest.TestCase):
         it's hard to test this content format method, we simply test the return will contains 
         key words like: given, when, then
         """
+        fake_story = {'jira': 'PLT-1234'}
         fake_ac = json.loads('{"given": "as prov admin",\
         "then": "multiple standard element been added, multiple user info elements been updated",\
         "title": "multiple standard elements added + multiple user info elements updated",\
         "when": "i add multiple standard elements and update multiple user info elements"}')
-        ret = transfer.construct_summary(fake_ac)
+        ret = transfer.construct_summary(fake_ac, fake_story)
         # assert result contains both fake_ac's key and value
         keys = ['given', 'when', 'then']
         for sub in keys:
@@ -92,6 +93,8 @@ class TestCase(unittest.TestCase):
         
         for sub in keys:
             self.assertTrue(fake_ac.get(sub) in ret)
+            
+        self.assertTrue("PLT-1234" in ret)
             
         self.assertTrue('title' not in ret)
         
@@ -188,13 +191,38 @@ class TestCase(unittest.TestCase):
         ret = transfer.tuple_to_at_obj(input2)
         self.assertEqual(ret.get(fields[0]), input2[1])
         self.assertTrue(ret.get(fields[1]), 'low')
+    
+    @mock.patch('transfer.create_single_test_case')
+    def test_create_test_cases_positive(self, create_single):
+        create_single.return_value = True
+        ac01 = {'given': 'g01', 'then': 't01', 'when': 'when01', 'acid': '0'}
+        ac02 = {'given': 'g02', 'then': 't02', 'when': 'when02', 'acid': '1'}
+        at01 = {'importance': 'low', 'title': 't01', 'acid': '0'}
+        at02 = {'importance': 'medium', 'title': 't02', 'acid': '1'}
+        at03 = {'importance': 'high', 'title': 't03', 'acid': '1'}
+        story = {'jira': 'PLT-1234'}
+        acs = [ac01, ac02]
+        ats = [at01, at02, at03]
+        ret = transfer.create_test_cases(ats, acs, story, 1, 2, 'someone')
         
+        # assert create test link case method called 3 times
+        self.assertEqual(create_single.call_count, 3)
+        
+    def test_create_test_cases_negative(self):
+        # assert error when at is invalid
+        self.assertRaises(RuntimeError, transfer.create_test_cases, [{'k':'v'}], [], [], 1, 2, 'someone')
+        
+        # assert error when ac is invalid
+        ac01 = {'given': 'g01', 'then': 't01', 'when': 'when01', 'acid': '0'}
+        self.assertRaises(RuntimeError, transfer.create_test_cases, [ac01], [], [], 1, 2, 'someone')
+    
     @mock.patch('testlink.testlinkapi.TestlinkAPIClient.createTestCase')
     def test_create_single_test_case_mock(self, mock_create):
         mock_create.return_value = [20]
         ac = {'given': 'g01', 'then': 't01', 'when': 'when01'}
         at = {'importance': 'low', 'title': 't01'}
-        ret = transfer.create_single_test_case(at, ac, 1857489, 5182, 'jzheng')
+        story = {'jira': 'PLT-1234'}
+        ret = transfer.create_single_test_case(at, ac, story, 1857489, 5182, 'jzheng')
         self.assertTrue(mock_create.called)
     '''
     def test_create_single_test_case_real(self):
@@ -203,7 +231,8 @@ class TestCase(unittest.TestCase):
         """
         ac = {'given': 'g01', 'then': 't01', 'when': 'when01'}
         at = {'importance': 'low', 'title': 't01'}
-        ret = transfer.create_single_test_case(at, ac, 1857489, 5182, 'jzheng')
+        story = {'jira': 'PLT-1234'}
+        ret = transfer.create_single_test_case(at, ac, story, 1857489, 5182, 'jzheng')
         self.assertEqual(ret.get('message'), 'Success!')'''
         
         
