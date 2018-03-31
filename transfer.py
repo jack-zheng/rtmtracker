@@ -20,20 +20,46 @@ def main():
     # print("process done !!")
 
 
-def get_page_body(pageid):
-    '''
-    send request to get page body, parse it and return xml content which contains ac info
-    '''
+def test_append_table():
+    page_body = get_page_body(235217044)
+    test_ret = {"additionalInfo": {"external_id": "123475190"}, "message": "Success!", 'atid': 0}
+    ac = {'title':'t01', 'atid': 0}
+    row = convert_create_ret_to_html(ac, test_ret)
+    table = generate_rtm_table()
+    ret = append_row_data(table, [row])
+    update_content = update_rtm_to_comfluence_page(page_body, ret)
+    
+
+def update_confluence_page_body_api(pageid, update_content):
     url = "https://confluence.successfactors.com/rest/api/content/{}".format(pageid)
     auth = HTTPBasicAuth('I306454', 'Lanmolei01241')
-    querystring = {"expand": "body.storage"}
+    payload_sample = '{"version": {"number": 0}, "id": "id_sample", "title": "title_sample","type": "page","body": {"storage": {"value": "value_sample","representation": "storage"}}}'
+    headers = {'Content-Type': "application/json"}
+    
+    payload_json = json.loads(payload_sample)
+    
+    body = get_page_body(pageid)
+    
+    resp = requests.request("PUT", url, auth=auth, data=payload, headers=headers)
+    return resp
+
+def get_page_body_and_version(pageid):
+    url = "https://confluence.successfactors.com/rest/api/content/{}".format(pageid)
+    auth = HTTPBasicAuth('I306454', 'Lanmolei01241')
+    querystring = {"expand": "body.storage,version"}
     resp = requests.get(url, auth=auth, params=querystring)
     
     # throw exception is request fail
     if resp.status_code != 200:
         mesg = "Send request fail, response show as: \n" + resp.text
         raise RuntimeError(mesg)
+    return resp
         
+def get_page_body(pageid):
+    '''
+    send request to get page body, parse it and return xml content which contains ac info
+    '''
+    resp = get_page_body_and_version(page_id)
     return json.loads(resp.text).get('body').get('storage').get('value')
 
 def format_body(body):
@@ -61,6 +87,83 @@ def update_rtm_to_comfluence_page(original_content, append_content):
     else:
         processed_content = original_content + append_content
     return processed_content
+    
+    
+def generate_rtm_table():
+    """
+    return tbody HTML content
+    """
+    table_html = '''
+    <table id="ret_info">
+        <tbody>
+            <tr>
+                <th>AT Title</th>
+                <th>Testlink Id</th>
+                <th>Comment</th>
+            </tr>
+        </tbody>
+    </table>'''
+    return ET.fromstring(table_html)
+    
+
+def append_row_data(table, rows):
+    """
+    @param: table, XML's elementtree obj
+    @param: row: XML obj convert from Testlink result
+    this method will append converted row data to table 
+    """
+    tbody = table.getchildren()[0]
+    for row in rows:
+        tbody.append(row)
+        
+    return table
+
+    
+def convert_create_ret_to_html(obj, create_ret):
+    """
+    pass the create result as parameter, this method will parse it and 
+    return the HTML formate content. case title from obj, case id from create result.
+    e.g. give a result: 
+    {"additionalInfo": {"external_id": "123475190",
+    "has_duplicate": False,
+    "id": "1857707",
+    "msg": "ok",
+    "new_name": "",
+    "status_ok": 1,
+    "tcversion_id": "1857708",
+    "version_number": 1},
+    "id": "1857707",
+    "message": "Success!",
+    "operation": "createTestCase",
+    "status": True}
+      
+    obj:
+    {"given": "as prov admin",
+    "importance": "low",
+    "then": "multiple standard elements been updated, no user info elements updated",
+    "title": "tttt01",
+    "when": "i update multiple standard elements"}
+      
+    return: 
+    <tr>
+       <td>tttt01</td>
+       <td>PLT#-123475190</td>
+       <td></td>
+    </tr>
+    """
+    title_column = obj.get("title")
+    id_column = "PLT#-" + create_ret.get("additionalInfo").get("external_id")
+    
+    # create XML tree and return XML tostring as result
+    tr_node = ET.Element('tr')
+    td1_node = ET.SubElement(tr_node, 'td')
+    td1_node.text = title_column
+    td2_node = ET.SubElement(tr_node, 'td')
+    td2_node.text = id_column
+    td3_node = ET.SubElement(tr_node, 'td')
+    td3_node.text = ' '
+    return ET.tostring(tr_node, encoding='unicode')
+    
     
 def get_story_ac_at_collection(formatted):
     """
@@ -92,7 +195,7 @@ def get_story_ac_at_collection(formatted):
         else:
             acid = len(ac_objs)
             ac_objs.append(parse_ac(parsed_list, acid))
-            at_objs += (parse_at(parsed_list, acid))
+            at_objs += (parse_at(parsed_list, acid, len(at_objs)))
             
     return {"story": story_obj, "acs": ac_objs, "ats": at_objs}
 
@@ -125,13 +228,14 @@ def parse_ac(str_list, acid):
     return ac
 
     
-def parse_at(str_list, acid):
+def parse_at(str_list, acid, start):
     """
     process passed string, return at list
     """
     at_list = filter_at_collection(str_list)
-    for sub in at_list:
+    for index, sub in enumerate(at_list):
         sub['acid'] = acid
+        sub['atid'] = index + start
     return at_list
     
 def filter_at_collection(str_list):
@@ -188,81 +292,6 @@ def tuple_to_at_obj(ac_tuple):
     return at_obj
     
     
-def convert_create_ret_to_html(obj, create_ret):
-    """
-    pass the create result as parameter, this method will parse it and 
-    return the HTML formate content. case title from obj, case id from create result.
-    e.g. give a result: 
-    {"additionalInfo": {"external_id": "123475190",
-    "has_duplicate": False,
-    "id": "1857707",
-    "msg": "ok",
-    "new_name": "",
-    "status_ok": 1,
-    "tcversion_id": "1857708",
-    "version_number": 1},
-    "id": "1857707",
-    "message": "Success!",
-    "operation": "createTestCase",
-    "status": True}
-      
-    obj:
-    {"given": "as prov admin",
-    "importance": "low",
-    "then": "multiple standard elements been updated, no user info elements updated",
-    "title": "tttt01",
-    "when": "i update multiple standard elements"}
-      
-    return: 
-    <tr>
-       <td>tttt01</td>
-       <td>PLT#-123475190</td>
-       <td></td>
-    </tr>
-    """
-    title_column = obj.get("title")
-    id_column = "PLT#-" + create_ret.get("additionalInfo").get("external_id")
-    
-    # create XML tree and return XML tostring as result
-    tr_node = ET.Element('tr')
-    td1_node = ET.SubElement(tr_node, 'td')
-    td1_node.text = title_column
-    td2_node = ET.SubElement(tr_node, 'td')
-    td2_node.text = id_column
-    td3_node = ET.SubElement(tr_node, 'td')
-    td3_node.text = ' '
-    return ET.tostring(tr_node, encoding='unicode')
-    
-def generate_rtm_table():
-    """
-    return tbody HTML content
-    """
-    table_html = '''
-    <table id="ret_info">
-        <tbody>
-            <tr>
-                <th>AC Title</th>
-                <th>Testlink Id</th>
-                <th>Comment</th>
-            </tr>
-        </tbody>
-    </table>'''
-    return ET.fromstring(table_html)
-    
-
-def append_row_data(table, rows):
-    """
-    @param: table, XML's elementtree obj
-    @param: row: XML obj convert from Testlink result
-    this method will append converted row data to table 
-    """
-    tbody = table.getchildren()[0]
-    for row in rows:
-        tbody.append(row)
-        
-    return table
-    
-    
 def create_single_test_case(at, ac, story, suite_id, project_id, author):
     """
     @params01 at: which contains test case id and importance
@@ -295,6 +324,7 @@ def create_single_test_case(at, ac, story, suite_id, project_id, author):
                        importance=case_importance, executiontype=2)
                        
     # result_ret is a list contains 1 ret, we return the ret directly
+    result_ret[0]['atid'] = at.get('atid')
     return result_ret[0]
 
 def create_test_cases(ats, acs, story, suite_id, project_id, author):

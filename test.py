@@ -27,7 +27,7 @@ class TestCase(unittest.TestCase):
         self.assertEqual(ret, expectedstr)
         
     def test_generate_rtm_table(self):
-        expected_header = ['AC Title', 'Testlink Id', 'Comment']
+        expected_header = ['AT Title', 'Testlink Id', 'Comment']
         ret = transfer.generate_rtm_table()
         self.assertEqual(ret.tag, 'table')
         self.assertEqual(ret.get('id'), 'ret_info')
@@ -106,7 +106,7 @@ class TestCase(unittest.TestCase):
         
         expected_acs = [{"given": "ac01 given", "when": "ac01 when", "then": "ac01 then", "acid": 0}, {"given": "ac02 given", "when": "ac02 when", "then": "ac02 then", "acid": 1}]
         
-        expected_ats = [{"title": "at title 01", "importance": "high", "acid": 0}, {"title": "at title 02", "importance": "low", "acid": 0}, {"title": "at title 03", "importance": "high", "acid": 1}]
+        expected_ats = [{"title": "at title 01", "importance": "high", "acid": 0, "atid": 0}, {"title": "at title 02", "importance": "low", "acid": 0, "atid": 1}, {"title": "at title 03", "importance": "high", "acid": 1, "atid": 2}]
         
         with open('./test_data/formatted.txt') as file:
             formatted = file.read()
@@ -150,14 +150,16 @@ class TestCase(unittest.TestCase):
             lines = file.readlines()
         # remove '\n' for each line
         lines = list(map(lambda x: x.strip(), lines))
-        ret = transfer.parse_at(lines, 0)
+        ret = transfer.parse_at(lines, 0, 0)
         
         self.assertEqual(ret[0].get('title'), 'at title 01')
         self.assertEqual(ret[0].get('importance'), 'high')
         self.assertEqual(ret[0].get('acid'), 0)
+        self.assertEqual(ret[0].get('atid'), 0)
         self.assertEqual(ret[1].get('title'), 'at title 02')
         self.assertTrue(ret[1].get('importance'), 'medium')
         self.assertEqual(ret[1].get('acid'), 0)
+        self.assertEqual(ret[1].get('atid'), 1)
     
     def test_filter_at_collection(self):
         input = ['acceptance criteria:',
@@ -218,12 +220,14 @@ class TestCase(unittest.TestCase):
     
     @mock.patch('testlink.testlinkapi.TestlinkAPIClient.createTestCase')
     def test_create_single_test_case_mock(self, mock_create):
-        mock_create.return_value = [20]
+        mock_create.return_value = [{}, {}]
         ac = {'given': 'g01', 'then': 't01', 'when': 'when01'}
-        at = {'importance': 'low', 'title': 't01'}
+        at = {'importance': 'low', 'title': 't01', 'atid': 0}
         story = {'jira': 'PLT-1234'}
         ret = transfer.create_single_test_case(at, ac, story, 1857489, 5182, 'jzheng')
         self.assertTrue(mock_create.called)
+        self.assertEqual(ret.get('atid'), 0)
+        
     '''
     def test_create_single_test_case_real(self):
         """
