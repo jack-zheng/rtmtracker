@@ -6,47 +6,60 @@ import xml.etree.ElementTree as ET
 import re
 import testlink
 
-def main():
+def main(pageid, folderid, projectid, author):
     # v2 test confluence page id: 235217044
-    body = get_page_body(235217044)
+    body = get_page_body(pageid)
     formatted = format_body(body)
     # print("formatted ---> %s \n" %formatted)
     ret = get_story_ac_at_collection(formatted)
-    ret = create_test_cases(ret.get('ats'), ret.get('acs'), ret.get('story'), 1857489, 5182, 'jzheng')
+    ats = ret.get('ats')
+    acs = ret.get('acs')
+    story = ret.get('story')
+    create_ret = create_test_cases(ats, acs, story, folderid, projectid, author)
+    print("----------------------> Test cases has been created in Testlink <----------------------")
     
-    print('cases create result: %s' % ret)
+    rows = generate_table_rows(ats, create_ret)
+    table = generate_rtm_table()
+    table_context = append_row_data(table, rows)
+    body_context = update_rtm_to_comfluence_page(body, table_context)
+    payload = prepare_update_payload(pageid, body_context)
+    resp = update_confluence_page_body_api(pageid, payload)
+    print("----------------------> update confluence status: %s <----------------------" % resp.status_code)
     # suite: 1857489(confluence transfer), project: 5182(platform), author: jzheng
     # create_testlink_cases(ac_objs, 1857489, 5182, 'jzheng')
-    # print("process done !!")
 
-
-def test_append_table():
-    page_body = get_page_body(235217044)
-    test_ret = {"additionalInfo": {"external_id": "123475190"}, "message": "Success!", 'atid': 0}
-    ac = {'title':'t01', 'atid': 0}
-    row = convert_create_ret_to_html(ac, test_ret)
-    table = generate_rtm_table()
-    ret = append_row_data(table, [row])
-    update_content = update_rtm_to_comfluence_page(page_body, ret)
     
-
-def update_confluence_page_body_api(pageid, update_content):
-    url = "https://confluence.successfactors.com/rest/api/content/{}".format(pageid)
-    auth = HTTPBasicAuth('I306454', 'Lanmolei01241')
+def prepare_update_payload(pageid, update_content):
+    resp = get_confluence_page_detail(pageid, "body.storage,version")
     payload_sample = '{"version": {"number": 0}, "id": "id_sample", "title": "title_sample","type": "page","body": {"storage": {"value": "value_sample","representation": "storage"}}}'
-    headers = {'Content-Type': "application/json"}
-    
     payload_json = json.loads(payload_sample)
     
-    body = get_page_body(pageid)
+    # get fields need to be update
+    resp_json = json.loads(resp.text)
+    version_num = resp_json.get('version').get('number')
+    id = resp_json.get('id')
+    title = resp_json.get('title')
     
-    resp = requests.request("PUT", url, auth=auth, data=payload, headers=headers)
-    return resp
-
-def get_page_body_and_version(pageid):
+    # update payload content
+    payload_json.get('version')['number'] = version_num + 1
+    payload_json['id'] = id
+    payload_json['title'] = title
+    payload_json.get('body').get('storage')['value'] = update_content
+    return json.dumps(payload_json)
+    
+def update_confluence_page_body_api(pageid, payload):
     url = "https://confluence.successfactors.com/rest/api/content/{}".format(pageid)
     auth = HTTPBasicAuth('I306454', 'Lanmolei01241')
-    querystring = {"expand": "body.storage,version"}
+    headers = {'Content-Type': "application/json"}
+    resp = requests.request("PUT", url, auth=auth, data=payload, headers=headers)
+    if resp.status_code != 200:
+        raise RuntimeError("Update confluence page failed, text: " + resp.text)
+    return resp
+
+def get_confluence_page_detail(pageid, fields):
+    url = "https://confluence.successfactors.com/rest/api/content/{}".format(pageid)
+    auth = HTTPBasicAuth('I306454', 'Lanmolei01241')
+    querystring = {"expand": fields}
     resp = requests.get(url, auth=auth, params=querystring)
     
     # throw exception is request fail
@@ -59,7 +72,7 @@ def get_page_body(pageid):
     '''
     send request to get page body, parse it and return xml content which contains ac info
     '''
-    resp = get_page_body_and_version(page_id)
+    resp = get_confluence_page_detail(pageid, "body.storage")
     return json.loads(resp.text).get('body').get('storage').get('value')
 
 def format_body(body):
@@ -111,13 +124,29 @@ def append_row_data(table, rows):
     @param: table, XML's elementtree obj
     @param: row: XML obj convert from Testlink result
     this method will append converted row data to table 
+    
+    return string type table content
     """
     tbody = table.getchildren()[0]
     for row in rows:
         tbody.append(row)
         
-    return table
+    return ET.tostring(table, 'unicode')
 
+    
+def generate_table_rows(ats, create_rets):
+    rows = []
+    for ret in create_rets:
+        atid  = ret.get('atid')
+        if atid is None:
+            raise RuntimeError("atid attribute in create result should not be none, rets: " + str(create_rets))
+        filters = [at for at in ats if at.get('atid') == atid]
+        if not filters:
+            raise RuntimeError("There is no match at, atid = " + atid + ", ats: " + str(ats))
+        row = convert_create_ret_to_html(filters[0], ret)
+        rows.append(row)
+    return rows
+    
     
 def convert_create_ret_to_html(obj, create_ret):
     """
@@ -162,7 +191,7 @@ def convert_create_ret_to_html(obj, create_ret):
     td2_node.text = id_column
     td3_node = ET.SubElement(tr_node, 'td')
     td3_node.text = ' '
-    return ET.tostring(tr_node, encoding='unicode')
+    return tr_node
     
     
 def get_story_ac_at_collection(formatted):

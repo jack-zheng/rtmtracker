@@ -3,6 +3,7 @@ import transfer
 import json
 import xml.etree.ElementTree as ET
 from unittest import mock 
+from requests.models import Response
 
 class TestCase(unittest.TestCase):
 
@@ -24,7 +25,7 @@ class TestCase(unittest.TestCase):
         expectedstr = '<tr><td>tttt01</td><td>PLT#-123475190</td><td> </td></tr>'
         
         ret = transfer.convert_create_ret_to_html(json.loads(objstr), json.loads(retstr))
-        self.assertEqual(ret, expectedstr)
+        self.assertEqual(ET.tostring(ret, 'unicode'), expectedstr)
         
     def test_generate_rtm_table(self):
         expected_header = ['AT Title', 'Testlink Id', 'Comment']
@@ -41,6 +42,20 @@ class TestCase(unittest.TestCase):
         for sub in expected_header:
             self.assertTrue(sub in headers)
     
+    @mock.patch('transfer.get_confluence_page_detail')
+    def test_prepare_update_payload(self, mock_method):
+        fake_resp = Response()
+        fake_resp._content = b'{"version": {"number": 0}, "id": "123", "title":"fake_title"}'
+        mock_method.return_value = fake_resp
+        ret = transfer.prepare_update_payload(123, 'prepared_update_content')
+        
+        self.assertTrue(mock_method.called)
+        ret_json = json.loads(ret)
+        self.assertEqual(ret_json.get("version").get("number"), 1)
+        self.assertEqual(ret_json.get("id"), "123")
+        self.assertEqual(ret_json.get("title"), "fake_title")
+        self.assertEqual(ret_json.get("body").get("storage")["value"], "prepared_update_content")
+    
     def test_append_row_data(self):
         """
         after append, table row count is as expected
@@ -48,9 +63,31 @@ class TestCase(unittest.TestCase):
         tabele = transfer.generate_rtm_table()
         tr = ET.fromstring('<tr><td>123</td></tr>')
         ret = transfer.append_row_data(tabele, [tr, tr])
+        ret = ET.fromstring(ret)
         tr_count = len(list(ret.iter('tr')))
         self.assertEqual(tr_count, 3)
         
+    @mock.patch('transfer.convert_create_ret_to_html')
+    def test_generate_table_rows_positive(self, mock_method):
+        mock_method.return_value = {0}
+        ats = [{"titile":"t1", "atid":"0"}, {"titile":"t2", "atid":"1"}]
+        create_rets = [{"ret":"0", "atid":"0"}, {"ret":"1", "atid":"1"}]
+        rows = transfer.generate_table_rows(ats, create_rets)
+        self.assertTrue(mock_method.called)
+        self.assertEqual(len(rows), 2)
+
+    @mock.patch('transfer.convert_create_ret_to_html')
+    def test_generate_table_rows_negative(self, mock_method):
+        mock_method.return_value = {0}
+        ats = [{"titile":"t1"}, {"titile":"t2", "atid":"1"}]
+        create_rets = [{"ret":"0", "atid":"0"}, {"ret":"1", "atid":"1"}]
+        self.assertRaises(RuntimeError, transfer.generate_table_rows, ats, create_rets)
+        
+        ats = [{"titile":"t2", "atid":"1"}]
+        create_rets = [{"ret":"1"}]
+        self.assertRaises(RuntimeError, transfer.generate_table_rows, ats, create_rets)
+
+    
     def test_update_rtm_to_comfluence_page_no_ret_in_page(self):
         """
         when there is no table in page, test method will append table 
