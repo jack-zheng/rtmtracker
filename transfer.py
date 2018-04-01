@@ -344,13 +344,15 @@ def create_single_test_case(at, ac, story, suite_id, project_id, author):
     'status': True}
     """
     tlc = _init_testlink_client()
-    
+    print('processed at: %s' % at)
     case_title = at.get('title')
-    case_importance = ac.get('importance')
+    case_importance = at.get('importance')
+    importance_leve = get_importance_level(case_importance)
+    print('importance level: %s' % importance_leve)
     case_summary = construct_summary(ac, story)
     result_ret = tlc.createTestCase(case_title, suite_id, project_id, author,\
                        case_summary,steps=[], preconditions='has not comment any step', \
-                       importance=case_importance, executiontype=2)
+                       importance=importance_leve, executiontype=2)
                        
     # result_ret is a list contains 1 ret, we return the ret directly
     result_ret[0]['atid'] = at.get('atid')
@@ -386,7 +388,7 @@ def get_importance_level(importance_level):
     # try to get status from status dict first
     # if no ret get, set import status as medium as default
     case_importance = _imp_status.get(importance_level)
-    return case_importance if case_importance else 2
+    return case_importance if case_importance else 1
 
 
 def construct_steps():
