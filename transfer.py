@@ -427,7 +427,7 @@ def construct_summary(ac_obj, story):
  
 def _init_testlink_client():
     key='c49d32b58989096d42282fd137ab58bc'
-    url='http://10.3.153.50/testlink/lib/api/xmlrpc/v1/xmlrpc.php'
+    url='https://testlink.successfactors.com/testlink/lib/api/xmlrpc/v1/xmlrpc.php'
     return testlink.TestlinkAPIClient(url, key)
 
 def list_cases_under_suite(suite_id):
