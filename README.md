@@ -12,11 +12,13 @@ How to install: pip install -r requirements.txt
 * navigate to the folder you want to insert test case, and click it
 * get project id, search by keyword of project like 'platform'
 * get folder id, search by keyword of 'containerid'
-![Gif get ids](./get project folder id.gif)
+
+![Gif get ids](images/testlink.gif)
 
 ### Get page id from confluence
 * navigate to the confluence page you need to process, select the page info, you will get the id
-![page id](./get project folder id.gif)
+
+![page id](images/get project folder id.gif)
 
 ## Phase I:
 1. confluence with story and ac, create a new folder in testlink to store those ac transfered cases
