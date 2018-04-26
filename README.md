@@ -4,8 +4,10 @@
 * run python srcipt with command: python ac_transer_from_confluence_to_testlink.py pageid     
 
 ## Install testlink lib
-this project need testlink lib to communication with testlink so make sure you have installed lib before you run command
-How to install: pip install -r requirements.txt
+1. this project need testlink lib to communication with testlink so make sure you have installed lib before you run command
+ +. How to install: pip install -r requirements.txt
+2. this project need python3 and not work under under python2
+
 
 ## Get parameter you need when run script
 ### Get parameter from testlink
@@ -25,8 +27,11 @@ How to install: pip install -r requirements.txt
 2. run script like transfer.py <page_id> <folder_id>, then cases transfer complete and ret map inserted in the confluence passed
 
 ## Phase II to do list:
-1. func(pageid, folderid, projectid, author) method to finish case transfer, done
-2. give out the interface to set case type, manual/auto
+1. func(pageid, folderid, projectid, author) method to finish case transfer - done
+2. give out the interface to set case type, manual/auto - delay
+
+---------------
+should be out of maintenance, not sure if it will back
 
 ## Phase III to do list:
 1. consider about the interface to user, flask? Jenkins?
